@@ -28,6 +28,11 @@ namespace InProcStreamProcessing.Shared
             _random = new Random();
         }
 
+        public string GetMachineId()
+        {
+            return "MD63FO1";
+        }
+
         public BusMessage Read()
         {
             // here we would interact with a C library to read the current value

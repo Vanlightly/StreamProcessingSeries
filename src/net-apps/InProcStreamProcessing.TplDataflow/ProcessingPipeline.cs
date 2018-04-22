@@ -62,43 +62,6 @@ namespace InProcStreamProcessing.TplDataFlow
             _dbPersister = dbPersister;
         }
 
-        public async Task ExampleAsync(CancellationToken token)
-        {
-            var linkOptions = new DataflowLinkOptions { PropagateCompletion = true };
-            var smallBufferOptions = new ExecutionDataflowBlockOptions() { BoundedCapacity = 5 };
-            var largeBufferOptions = new ExecutionDataflowBlockOptions() { BoundedCapacity = 200 };
-
-            var block1 = new TransformBlock<int, int>((int counter) => 
-            {
-                Console.WriteLine("B1: " + counter.ToString());
-                return counter; }
-            , smallBufferOptions);
-
-            var block2 = new BroadcastBlock<int>((int counter) => counter, new DataflowBlockOptions() { BoundedCapacity = 1 });
-            var block4 = new ActionBlock<int>(async (int counter) =>
-            {
-                Console.WriteLine("                      B4: " + counter.ToString());
-                await Task.Delay(3000);
-            }, smallBufferOptions);
-            var block3 = new ActionBlock<int>((int counter) => Console.WriteLine("        B3: " + counter.ToString()), largeBufferOptions);
-
-            block1.LinkTo(block2, linkOptions);
-            block2.LinkTo(block3, linkOptions);
-            block2.LinkTo(block4, linkOptions);
-
-            int ctr = 0;
-            while (!token.IsCancellationRequested)
-            {
-                block1.Post(ctr);
-                ctr++;
-                await Task.Delay(1000);
-            }
-
-            block1.Complete();
-            //block3.Completion.Wait();
-            //block4.Completion.Wait();
-        }
-
         public async Task StartPipelineAsync(CancellationToken token)
         {
             _decoder.LoadSensorConfigs();
@@ -265,45 +228,5 @@ namespace InProcStreamProcessing.TplDataFlow
 
             // clean up any other resources like ZeroMQ for example
         }
-
-        //public async Task ConsumeWithMixedModeAsync(CancellationToken token)
-        //{
-        //    _decoder.LoadSensorConfigs();
-
-        //    var linkOptions = new DataflowLinkOptions { PropagateCompletion = true };
-        //    var executionOptions = new ExecutionDataflowBlockOptions() { BoundedCapacity = 2 };
-        //    var batchOptions = new GroupingDataflowBlockOptions() { BoundedCapacity = 2 };
-
-        //    var writeRawMessageBlock = new TransformBlock<RawBusMessage, RawBusMessage>(async (RawBusMessage msg) => await WriteToFile(msg), executionOptions);
-        //    var decoderBlock = new TransformManyBlock<RawBusMessage, DecodedMessage>(new Func<RawBusMessage, IEnumerable<DecodedMessage>>(Decode), executionOptions);
-        //    var broadcast = new BroadcastBlock<DecodedMessage>(msg => msg);
-        //    var realTimeFeedBlock = new ActionBlock<DecodedMessage>(async (DecodedMessage msg) => await PublishToRealTimeFeed(msg), executionOptions);
-        //    var batchBlock = new BatchBlock<DecodedMessage>(2);
-        //    var batchBroadcastBlock = new BroadcastBlock<DecodedMessage[]>(msg => msg);
-        //    var statsFeedBlock = new ActionBlock<DecodedMessage[]>(async (DecodedMessage[] messages) => await PublishToStatsFeed(messages), executionOptions);
-        //    var dbPersistenceBlock = new ActionBlock<DecodedMessage[]>(async (DecodedMessage[] messages) => await PersistToDb(messages), executionOptions);
-
-        //    writeRawMessageBlock.LinkTo(decoderBlock, linkOptions);
-        //    decoderBlock.LinkTo(broadcast, linkOptions);
-        //    broadcast.LinkTo(realTimeFeedBlock, linkOptions);
-        //    broadcast.LinkTo(batchBlock, linkOptions);
-        //    batchBlock.LinkTo(batchBroadcastBlock, linkOptions);
-        //    batchBroadcastBlock.LinkTo(statsFeedBlock, linkOptions);
-        //    batchBroadcastBlock.LinkTo(dbPersistenceBlock, linkOptions);
-
-        //    var consumerTask = _dataBusReader.StartConsuming(writeRawMessageBlock, token, TimeSpan.FromMilliseconds(1000), FlowControlMode.BackPressure);
-
-        //    while (!token.IsCancellationRequested)
-        //        await Task.Delay(500);
-
-        //    writeRawMessageBlock.Complete();
-        //    statsFeedBlock.Completion.Wait();
-        //    dbPersistenceBlock.Completion.Wait();
-        //    realTimeFeedBlock.Completion.Wait();
-        //    consumerTask.Wait();
-
-
-        //}
-
     }
 }
