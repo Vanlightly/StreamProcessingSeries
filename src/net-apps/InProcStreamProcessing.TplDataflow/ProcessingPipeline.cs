@@ -150,7 +150,7 @@ namespace InProcStreamProcessing.TplDataFlow
             var largeBufferOptions = new ExecutionDataflowBlockOptions() { BoundedCapacity = 60000 };
             var smallBufferOptions = new ExecutionDataflowBlockOptions() { BoundedCapacity = 1000 };
             var parallelizedOptions = new ExecutionDataflowBlockOptions() { BoundedCapacity = 1000, MaxDegreeOfParallelism = 4 };
-            var batchOptions = new GroupingDataflowBlockOptions() { BoundedCapacity = 1000 };
+            var batchOptions = new GroupingDataflowBlockOptions() { BoundedCapacity = 200000 };
 
             // create some branching functions for our TransformManyBlocks
             // DecodedMessage gets tranformed into 3 RoutedMessage for the first three way branch
@@ -200,13 +200,13 @@ namespace InProcStreamProcessing.TplDataFlow
             // link the blocks to together
             writeRawMessageBlock.LinkTo(decoderBlock, linkOptions);
             decoderBlock.LinkTo(msgBranchBlock, linkOptions);
-            msgBranchBlock.LinkTo(realTimeFeedBlock, routedMsg => routedMsg.RouteKey == 1); // route on the key
-            msgBranchBlock.LinkTo(oneSecondBatchBlock, routedMsg => routedMsg.RouteKey == 2); // route on the key
-            msgBranchBlock.LinkTo(thirtySecondBatchBlock, routedMsg => routedMsg.RouteKey == 3); // route on the key
+            msgBranchBlock.LinkTo(realTimeFeedBlock, linkOptions, routedMsg => routedMsg.RouteKey == 1); // route on the key
+            msgBranchBlock.LinkTo(oneSecondBatchBlock, linkOptions, routedMsg => routedMsg.RouteKey == 2); // route on the key
+            msgBranchBlock.LinkTo(thirtySecondBatchBlock, linkOptions, routedMsg => routedMsg.RouteKey == 3); // route on the key
             thirtySecondBatchBlock.LinkTo(thirtySecondStatsFeedBlock, linkOptions);
             oneSecondBatchBlock.LinkTo(batchBroadcastBlock, linkOptions);
-            batchBroadcastBlock.LinkTo(oneSecondStatsFeedBlock, routedMsg => routedMsg.RouteKey == 1); // route on the key
-            batchBroadcastBlock.LinkTo(dbPersistenceBlock, routedMsg => routedMsg.RouteKey == 2); // route on the key
+            batchBroadcastBlock.LinkTo(oneSecondStatsFeedBlock, linkOptions, routedMsg => routedMsg.RouteKey == 1); // route on the key
+            batchBroadcastBlock.LinkTo(dbPersistenceBlock, linkOptions, routedMsg => routedMsg.RouteKey == 2); // route on the key
 
             // Step 2 - Start consuming the machine bus interface (the producer)
             var consumerTask = _dataBusReader.StartConsuming(writeRawMessageBlock, token, TimeSpan.FromMilliseconds(1000), FlowControlMode.BackPressure);

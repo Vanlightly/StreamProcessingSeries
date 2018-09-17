@@ -11,7 +11,7 @@ namespace InProcStreamProcessing.TplDataFlow
 {
     class ShowMessages
     {
-        public static bool PrintReader = false;
+        public static bool PrintReader = true;
         public static bool PrintFileWriter = true;
         public static bool PrintDecoder = true;
         public static bool PrintRealTimeFeed = true;
@@ -34,7 +34,16 @@ namespace InProcStreamProcessing.TplDataFlow
                     new StatsFeedPublisher(),
                     new DbPersister());
 
-                var pipelineTask = Task.Run(async () => await pipeline.StartPipelineWithBackPressureAsync(cts.Token));
+                var pipelineTask = Task.Run(async () => {
+                    try
+                    {
+                        await pipeline.StartPipelineWithBackPressureAsync(cts.Token);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Pipeline terminated due to error {ex}");
+                    }
+                });
 
                 Console.WriteLine("Press any key to shutdown the pipeline");
                 Console.ReadKey();
