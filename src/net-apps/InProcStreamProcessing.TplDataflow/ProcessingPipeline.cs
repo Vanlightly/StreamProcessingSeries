@@ -119,9 +119,15 @@ namespace InProcStreamProcessing.TplDataFlow
             // Step 2 - Start consuming the machine bus interface (the producer)
             var consumerTask = _dataBusReader.StartConsuming(writeRawMessageBlock, token, TimeSpan.FromMilliseconds(1000), FlowControlMode.LoadShed);
 
-            // Step 3 - Keep going until the CancellationToken is cancelled.
-            while(!token.IsCancellationRequested)
+            // Step 3 - Keep going until the CancellationToken is cancelled or a leaf block is the the completed state either due to a fault or the completion of the pipeline.
+            while (!token.IsCancellationRequested
+                && !realTimeFeedBlock.Completion.IsCompleted
+                && !oneSecondStatsFeedBlock.Completion.IsCompleted
+                && !dbPersistenceBlock.Completion.IsCompleted
+                && !thirtySecondStatsFeedBlock.Completion.IsCompleted)
+            {
                 await Task.Delay(500);
+            }
 
             // Step 4 - the CancellationToken has been cancelled and our producer has stopped producing
             // call Complete on the first block, this will propagate down the pipeline
@@ -211,9 +217,15 @@ namespace InProcStreamProcessing.TplDataFlow
             // Step 2 - Start consuming the machine bus interface (the producer)
             var consumerTask = _dataBusReader.StartConsuming(writeRawMessageBlock, token, TimeSpan.FromMilliseconds(1000), FlowControlMode.BackPressure);
 
-            // Step 3 - Keep going until the CancellationToken is cancelled.
-            while (!token.IsCancellationRequested)
+            // Step 3 - Keep going until the CancellationToken is cancelled or a leaf block is the the completed state either due to a fault or the completion of the pipeline.
+            while (!token.IsCancellationRequested
+                || oneSecondStatsFeedBlock.Completion.IsCompleted
+                || dbPersistenceBlock.Completion.IsCompleted
+                || realTimeFeedBlock.Completion.IsCompleted
+                || thirtySecondStatsFeedBlock.Completion.IsCompleted)
+            {
                 await Task.Delay(500);
+            }
 
             // Step 4 - the CancellationToken has been cancelled and our producer has stopped producing
             // call Complete on the first block, this will propagate down the pipeline
