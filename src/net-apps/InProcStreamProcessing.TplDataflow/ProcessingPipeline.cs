@@ -134,11 +134,11 @@ namespace InProcStreamProcessing.TplDataFlow
             writeRawMessageBlock.Complete();
 
             // wait for all leaf blocks to finish processing their data
-            await realTimeFeedBlock.Completion;
-            await oneSecondStatsFeedBlock.Completion;
-            await dbPersistenceBlock.Completion;
-            await thirtySecondStatsFeedBlock.Completion;
-            await consumerTask;
+            await Task.WhenAll(realTimeFeedBlock.Completion,
+                oneSecondStatsFeedBlock.Completion,
+                dbPersistenceBlock.Completion,
+                thirtySecondStatsFeedBlock.Completion,
+                consumerTask);
 
             // clean up any other resources like ZeroMQ for example
         }
@@ -232,11 +232,11 @@ namespace InProcStreamProcessing.TplDataFlow
             writeRawMessageBlock.Complete();
 
             // wait for all leaf blocks to finish processing their data
-            await oneSecondStatsFeedBlock.Completion;
-            await thirtySecondStatsFeedBlock.Completion;
-            await dbPersistenceBlock.Completion;
-            await realTimeFeedBlock.Completion;
-            await consumerTask;
+            await Task.WhenAll(oneSecondStatsFeedBlock.Completion,
+                thirtySecondStatsFeedBlock.Completion,
+                dbPersistenceBlock.Completion,
+                realTimeFeedBlock.Completion,
+                consumerTask);
 
             // clean up any other resources like ZeroMQ for example
         }
